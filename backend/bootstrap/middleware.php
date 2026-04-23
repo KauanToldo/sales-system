@@ -22,4 +22,5 @@ return function (App $app) {
 
     // 🔥 3. ERROR MIDDLEWARE
     $app->addErrorMiddleware(true, true, true);
+    $app->addBodyParsingMiddleware();
 };
