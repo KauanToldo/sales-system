@@ -1,38 +1,13 @@
-<!DOCTYPE html>
-<html>
-
-<head>
-    <script src="https://unpkg.com/vue@3"></script>
-</head>
-
-<body>
-
-    <div id="app">
-        <h1>Usuarios</h1>
-        <ul>
-            <li v-for="u in users" :key="u.id">
-                {{ u.id }} - {{ u.name }} - {{ u.email }}
-            </li>
-        </ul>
-    </div>
-
-    <script>
-        const { createApp } = Vue;
-
-        createApp({
-            data() {
-                return {
-                    users: []
-                }
-            },
-            mounted() {
-                fetch('http://localhost:8000/users')
-                    .then(res => res.json())
-                    .then(data => this.users = data);
-            }
-        }).mount('#app');
-    </script>
-
-</body>
-
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>
