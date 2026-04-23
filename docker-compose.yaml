@@ -11,7 +11,7 @@ services:
       APP_DB_PASSWORD: ${APP_DB_PASSWORD}
     volumes:
       - ./backend:/app
-    command: php -S 0.0.0.0:8000
+    command: php -S 0.0.0.0:8000 -t /app/src /app/src/index.php
     ports:
       - "${BACKEND_PORT}:8000"
     depends_on:
