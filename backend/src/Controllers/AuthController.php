@@ -10,73 +10,126 @@ class AuthController
 {
     public function __construct(private AuthService $authService) {}
 
+    private function errorResponse(
+        Response $response,
+        string $message,
+        string $code,
+        int $status,
+        array $details = []
+    ): Response {
+        $response->getBody()->write(json_encode([
+            'error' => $message,
+            'code' => $code,
+            'details' => $details,
+        ]));
+
+        return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus($status);
+    }
+
     public function register(Request $request, Response $response): Response
     {
-        $data = $request->getParsedBody();
+        $parsedBody = $request->getParsedBody();
+        $data = is_array($parsedBody) ? $parsedBody : [];
 
         try {
-            $this->authService->register($data);
+            $result = $this->authService->register($data);
 
-            $response->getBody()->write(json_encode([
-                'message' => 'User created'
-            ]));
+            $response->getBody()->write(json_encode($result));
 
             return $response
                 ->withHeader('Content-Type', 'application/json')
                 ->withStatus(201);
 
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse(
+                $response,
+                $e->getMessage(),
+                'validation_error',
+                422
+            );
+        } catch (\DomainException $e) {
+            return $this->errorResponse(
+                $response,
+                $e->getMessage(),
+                'email_already_exists',
+                409
+            );
         } catch (\Exception $e) {
-            $response->getBody()->write(json_encode([
-                'error' => $e->getMessage()
-            ]));
-
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(400);
+            return $this->errorResponse(
+                $response,
+                $e->getMessage(),
+                'auth_error',
+                400
+            );
         }
     }
 
     public function login(Request $request, Response $response): Response
     {
-        $data = $request->getParsedBody();
+        $parsedBody = $request->getParsedBody();
+        $data = is_array($parsedBody) ? $parsedBody : [];
 
         try {
-            $token = $this->authService->login($data);
+            $result = $this->authService->login($data);
 
-            $response->getBody()->write(json_encode([
-                'token' => $token
-            ]));
+            $response->getBody()->write(json_encode($result));
 
             return $response
                 ->withHeader('Content-Type', 'application/json')
                 ->withStatus(200);
 
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse(
+                $response,
+                $e->getMessage(),
+                'validation_error',
+                422
+            );
         } catch (\Exception $e) {
-            $response->getBody()->write(json_encode([
-                'error' => $e->getMessage()
-            ]));
-
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(401);
+            return $this->errorResponse(
+                $response,
+                $e->getMessage(),
+                'invalid_credentials',
+                401
+            );
         }
     }
 
     public function me(Request $request, Response $response): Response
     {
-        $user = $request->getAttribute('user');
+        $authHeader = $request->getHeaderLine('Authorization');
 
-        if (!$user) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Unauthorized'
-            ]));
-
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(401);
+        if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+            return $this->errorResponse(
+                $response,
+                'Unauthorized',
+                'unauthorized',
+                401
+            );
         }
 
-        $response->getBody()->write(json_encode($user));
+        $token = str_replace('Bearer ', '', $authHeader);
+
+        try {
+            $user = $this->authService->validateToken($token);
+        } catch (\Throwable $e) {
+            return $this->errorResponse(
+                $response,
+                'Unauthorized',
+                'unauthorized',
+                401
+            );
+        }
+
+        $response->getBody()->write(json_encode([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+        ]));
 
         return $response
             ->withHeader('Content-Type', 'application/json')

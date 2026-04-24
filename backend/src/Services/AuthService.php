@@ -16,47 +16,102 @@ class AuthService
         private string $jwtSecret
     ) {}
 
-    public function register(array $data): void
+    public function register(array $data): array
     {
-        $existing = $this->userRepository->findByEmail($data['email']);
+        $name = trim((string) ($data['name'] ?? ''));
+        $email = trim((string) ($data['email'] ?? ''));
+        $password = (string) ($data['password'] ?? '');
+
+        if ($name === '' || $email === '' || $password === '') {
+            throw new \InvalidArgumentException('Name, email and password are required');
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new \InvalidArgumentException('Invalid email format');
+        }
+
+        $existing = $this->userRepository->findByEmail($email);
 
         if ($existing) {
-            throw new \Exception('Email already exists');
+            throw new \DomainException('Email already exists');
         }
 
-        $this->userRepository->create(
+        $user = $this->userRepository->create(
             new User(
                 null,
-                $data['name'],
-                $data['email'],
-                password_hash($data['password'], PASSWORD_DEFAULT)
+                $name,
+                $email,
+                password_hash($password, PASSWORD_DEFAULT)
             )
         );
+
+        return [
+            'token' => $this->buildToken($user),
+            'user' => $this->serializeUser($user),
+        ];
     }
 
-    public function login(array $data): string
+    public function login(array $data): array
     {
-        $user = $this->userRepository->findByEmail($data['email']);
+        $email = trim((string) ($data['email'] ?? ''));
+        $password = (string) ($data['password'] ?? '');
 
-        if (!$user || !password_verify($data['password'], $user->password)) {
-            throw new \Exception('Invalid credentials');
+        if ($email === '' || $password === '') {
+            throw new \InvalidArgumentException('Email and password are required');
         }
 
+        $user = $this->userRepository->findByEmail($email);
+
+        if (!$user || !password_verify($password, $user->password)) {
+            throw new \RuntimeException('Invalid credentials');
+        }
+
+        return [
+            'token' => $this->buildToken($user),
+            'user' => $this->serializeUser($user),
+        ];
+    }
+
+    public function validateToken(string $token): User
+    {
+        $decoded = JWT::decode(
+            $token,
+            new Key($this->jwtSecret, 'HS256')
+        );
+
+        $userId = isset($decoded->sub) ? (int) $decoded->sub : 0;
+
+        if ($userId <= 0) {
+            throw new \RuntimeException('Unauthorized');
+        }
+
+        $user = $this->userRepository->findById($userId);
+
+        if (!$user) {
+            throw new \RuntimeException('Unauthorized');
+        }
+
+        return $user;
+    }
+
+    private function buildToken(User $user): string
+    {
         $payload = [
             'sub' => $user->id,
             'email' => $user->email,
             'iat' => time(),
-            'exp' => time() + 3600
+            'exp' => time() + 3600,
         ];
 
         return JWT::encode($payload, $this->jwtSecret, 'HS256');
     }
 
-    public function validateToken(string $token): object
+    private function serializeUser(User $user): array
     {
-        return JWT::decode(
-            $token,
-            new Key($this->jwtSecret, 'HS256')
-        );
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+        ];
     }
 }

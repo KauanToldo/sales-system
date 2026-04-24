@@ -41,7 +41,9 @@ class JwtAuthMiddleware implements MiddlewareInterface
     {
         $response = new Response();
         $response->getBody()->write(json_encode([
-            'error' => 'Unauthorized'
+            'error' => 'Unauthorized',
+            'code' => 'unauthorized',
+            'details' => [],
         ]));
 
         return $response->withHeader('Content-Type', 'application/json')
