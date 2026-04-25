@@ -21,9 +21,18 @@ class AuthService
         $name = trim((string) ($data['name'] ?? ''));
         $email = trim((string) ($data['email'] ?? ''));
         $password = (string) ($data['password'] ?? '');
+        $confirmPassword = (string) ($data['confirm_password'] ?? '');
 
-        if ($name === '' || $email === '' || $password === '') {
-            throw new \InvalidArgumentException('Name, email and password are required');
+        if ($name === '' || $email === '' || $password === '' || $confirmPassword === '') {
+            throw new \InvalidArgumentException('Name, email, password and confirm password are required');
+        }
+
+        if(strlen($password) < 6) {
+            throw new \InvalidArgumentException('Password must be at least 6 characters');
+        }
+
+        if ($password !== $confirmPassword) {
+            throw new \InvalidArgumentException('Passwords do not match');
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
