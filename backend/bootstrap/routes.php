@@ -33,4 +33,5 @@ return function (App $app, $container) {
     (require __DIR__ . '/../src/Routes/products.php')($app);
     (require __DIR__ . '/../src/Routes/customers.php')($app);
     (require __DIR__ . '/../src/Routes/payment_methods.php')($app);
+    (require __DIR__ . '/../src/Routes/sales.php')($app);
 };
