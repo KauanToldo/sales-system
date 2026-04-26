@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Entities\PaymentMethod;
+use App\Enums\PaymentMethodType;
 use App\Repositories\PaymentMethodRepository;
 
 final class PaymentMethodService
@@ -30,11 +31,15 @@ final class PaymentMethodService
     public function create(array $data): array
     {
         $name = trim((string) ($data['name'] ?? ''));
-        $type = trim((string) ($data['type'] ?? ''));
+        $type = strtoupper(trim((string) ($data['type'] ?? '')));
         $status = isset($data['status']) ? (bool) $data['status'] : true;
 
         if ($name === '' || $type === '') {
             throw new \InvalidArgumentException('name and type are required');
+        }
+
+        if (!in_array($type, [PaymentMethodType::ELECTRONIC->value, PaymentMethodType::CASH->value], true)) {
+            throw new \InvalidArgumentException('type must be ELECTRONIC or CASH');
         }
 
         $method = new PaymentMethod(null, $name, $type, $status);
@@ -46,10 +51,14 @@ final class PaymentMethodService
     public function update(int $id, array $data): array
     {
         $name = trim((string) ($data['name'] ?? ''));
-        $type = trim((string) ($data['type'] ?? ''));
+        $type = strtoupper(trim((string) ($data['type'] ?? '')));
 
         if ($name === '' || $type === '') {
             throw new \InvalidArgumentException('name and type are required');
+        }
+
+        if (!in_array($type, [PaymentMethodType::ELECTRONIC->value, PaymentMethodType::CASH->value], true)) {
+            throw new \InvalidArgumentException('type must be ELECTRONIC or CASH');
         }
 
         if (!array_key_exists('status', $data)) {

@@ -8,14 +8,21 @@ use App\Repositories\UserRepository;
 use App\Repositories\ProductRepository;
 use App\Repositories\CustomerRepository;
 use App\Repositories\PaymentMethodRepository;
+use App\Repositories\SaleRepository;
+use App\Repositories\SaleItemRepository;
+use App\Repositories\PaymentRepository;
 use App\Services\AuthService;
 use App\Services\ProductService;
 use App\Services\CustomerService;
 use App\Services\PaymentMethodService;
+use App\Services\SaleService;
+use App\Services\SaleCalculator;
+use App\Services\SalePdfService;
 use App\Controllers\AuthController;
 use App\Controllers\ProductController;
 use App\Controllers\CustomerController;
 use App\Controllers\PaymentMethodController;
+use App\Controllers\SaleController;
 
 $container = new Container();
 
@@ -56,6 +63,18 @@ $container->set(PaymentMethodRepository::class, function ($c) {
     return new PaymentMethodRepository($c->get(PDO::class));
 });
 
+$container->set(SaleRepository::class, function ($c) {
+    return new SaleRepository($c->get(PDO::class));
+});
+
+$container->set(SaleItemRepository::class, function ($c) {
+    return new SaleItemRepository($c->get(PDO::class));
+});
+
+$container->set(PaymentRepository::class, function ($c) {
+    return new PaymentRepository($c->get(PDO::class));
+});
+
 $container->set(AuthService::class, function ($c) {
     return new AuthService(
         $c->get(PDO::class),
@@ -88,6 +107,26 @@ $container->set(PaymentMethodService::class, function ($c) {
     );
 });
 
+$container->set(SaleCalculator::class, function () {
+    return new SaleCalculator();
+});
+
+$container->set(SaleService::class, function ($c) {
+    return new SaleService(
+        $c->get(PDO::class),
+        $c->get(SaleRepository::class),
+        $c->get(SaleItemRepository::class),
+        $c->get(PaymentRepository::class),
+        $c->get(ProductRepository::class),
+        $c->get(PaymentMethodRepository::class),
+        $c->get(SaleCalculator::class)
+    );
+});
+
+$container->set(SalePdfService::class, function ($c) {
+    return new SalePdfService($c->get(PDO::class));
+});
+
 $container->set(ProductController::class, function ($c) {
     return new ProductController(
         $c->get(ProductService::class)
@@ -103,6 +142,13 @@ $container->set(CustomerController::class, function ($c) {
 $container->set(PaymentMethodController::class, function ($c) {
     return new PaymentMethodController(
         $c->get(PaymentMethodService::class)
+    );
+});
+
+$container->set(SaleController::class, function ($c) {
+    return new SaleController(
+        $c->get(SaleService::class),
+        $c->get(SalePdfService::class)
     );
 });
 
