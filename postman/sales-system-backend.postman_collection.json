@@ -27,6 +27,10 @@
             "value": ""
         },
         {
+            "key": "sale_id",
+            "value": ""
+        },
+        {
             "key": "product_sku",
             "value": ""
         },
@@ -109,7 +113,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"email\": \"admin@teste.com\",\n  \"password\": \"123456\"\n}"
+                            "raw": "{\n  \"email\": \"admin@email.com\",\n  \"password\": \"123456\"\n}"
                         },
                         "url": "{{baseUrl}}/auth/login"
                     },
@@ -306,7 +310,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"PIX Postman {{$timestamp}}\",\n  \"type\": \"pix\",\n  \"status\": true\n}"
+                            "raw": "{\n  \"name\": \"Electronic Postman {{$timestamp}}\",\n  \"type\": \"ELECTRONIC\",\n  \"status\": true\n}"
                         },
                         "url": "{{baseUrl}}/payment-methods"
                     },
@@ -352,7 +356,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"PIX Postman Updated\",\n  \"type\": \"pix\",\n  \"status\": false\n}"
+                            "raw": "{\n  \"name\": \"Electronic Postman Updated\",\n  \"type\": \"ELECTRONIC\",\n  \"status\": false\n}"
                         },
                         "url": "{{baseUrl}}/payment-methods/{{payment_method_id}}"
                     }
@@ -363,6 +367,129 @@
                         "method": "DELETE",
                         "header": [],
                         "url": "{{baseUrl}}/payment-methods/{{payment_method_id}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Sales (Lifecycle)",
+            "item": [
+                {
+                    "name": "Create Sale (OPEN)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"customer_id\": {{customer_id}},\n  \"items\": [\n    {\n      \"product_id\": {{product_id}},\n      \"quantity\": 1\n    }\n  ]\n}"
+                        },
+                        "url": "{{baseUrl}}/sales"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Create Sale OPEN 201', function () { pm.expect(pm.response.code).to.eql(201); });",
+                                    "const json = pm.response.json();",
+                                    "if (json.id) pm.collectionVariables.set('sale_id', String(json.id));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Add Payment (partial or full)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"payment_method_id\": {{payment_method_id}},\n  \"amount\": \"100.00\"\n}"
+                        },
+                        "url": "{{baseUrl}}/sales/{{sale_id}}/payments"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Payment added', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Add Payment (second - optional)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"payment_method_id\": {{payment_method_id}},\n  \"amount\": \"1000.00\"\n}"
+                        },
+                        "url": "{{baseUrl}}/sales/{{sale_id}}/payments"
+                    }
+                },
+                {
+                    "name": "Finalize Sale",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{baseUrl}}/sales/{{sale_id}}/finalize"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Finalize OK', function () { pm.expect(pm.response.code).to.eql(200); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Get Sale By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/sales/{{sale_id}}"
+                    }
+                },
+                {
+                    "name": "Get Sale PDF (only FINALIZED)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/sales/{{sale_id}}/pdf"
+                    }
+                },
+                {
+                    "name": "List Sales",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/sales"
                     }
                 }
             ]
