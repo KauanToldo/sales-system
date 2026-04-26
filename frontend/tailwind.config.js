@@ -5,6 +5,10 @@ export default {
     ],
     theme: {
         extend: {
+            fontFamily: {
+                sans: ['Public Sans', 'Segoe UI', 'sans-serif'],
+                display: ['Sora', 'Public Sans', 'sans-serif'],
+            },
             colors: {
                 sales: {
                     primary: '#0072BC',
