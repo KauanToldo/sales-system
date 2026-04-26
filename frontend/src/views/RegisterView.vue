@@ -86,7 +86,7 @@ const handleRegister = async () => {
   const success = await authStore.register(name.value, email.value, password.value, confirmPassword.value)
 
   if (success) {
-    router.push({ name: 'home' })
+    router.push({ name: 'dashboard' })
     return
   }
 
