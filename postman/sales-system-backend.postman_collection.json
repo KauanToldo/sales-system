@@ -1,0 +1,543 @@
+{
+    "info": {
+        "_postman_id": "d7a4a930-31f4-4ac2-9ae0-fcfd58b81af3",
+        "name": "Sales System Backend",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "description": "Collection para testar Auth + CRUDs de Products, Customers e Payment Methods."
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8000"
+        },
+        {
+            "key": "token",
+            "value": ""
+        },
+        {
+            "key": "product_id",
+            "value": ""
+        },
+        {
+            "key": "customer_id",
+            "value": ""
+        },
+        {
+            "key": "payment_method_id",
+            "value": ""
+        },
+        {
+            "key": "sale_id",
+            "value": ""
+        },
+        {
+            "key": "product_sku",
+            "value": ""
+        },
+        {
+            "key": "customer_email",
+            "value": ""
+        },
+        {
+            "key": "payment_method_cash_id",
+            "value": ""
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "Health",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+            }
+        },
+        {
+            "name": "Auth",
+            "item": [
+                {
+                    "name": "Register",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Postman User\",\n  \"email\": \"postman+{{$timestamp}}@mail.com\",\n  \"password\": \"123456\",\n  \"confirm_password\": \"123456\"\n}"
+                        },
+                        "url": "{{baseUrl}}/auth/register"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "  const json = pm.response.json();",
+                                    "  if (json.token) pm.collectionVariables.set('token', json.token);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Login",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"admin@email.com\",\n  \"password\": \"123456\"\n}"
+                        },
+                        "url": "{{baseUrl}}/auth/login"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Login OK', function () { pm.expect(pm.response.code).to.eql(200); });",
+                                    "const json = pm.response.json();",
+                                    "if (json.token) pm.collectionVariables.set('token', json.token);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Me",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/auth/me"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Products",
+            "item": [
+                {
+                    "name": "Create Product",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sku\": \"SKU-{{$timestamp}}\",\n  \"name\": \"Notebook Pro\",\n  \"category\": \"Hardware\",\n  \"price\": \"1999.90\"\n}"
+                        },
+                        "url": "{{baseUrl}}/products"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Create Product 201', function () { pm.expect(pm.response.code).to.eql(201); });",
+                                    "const json = pm.response.json();",
+                                    "if (json.id) pm.collectionVariables.set('product_id', String(json.id));",
+                                    "if (json.sku) pm.collectionVariables.set('product_sku', json.sku);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "List Products",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/products"
+                    }
+                },
+                {
+                    "name": "Get Product By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/products/{{product_id}}"
+                    }
+                },
+                {
+                    "name": "Update Product",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sku\": \"{{product_sku}}\",\n  \"name\": \"Notebook Pro Updated\",\n  \"category\": \"Hardware\",\n  \"price\": \"2099.90\"\n}"
+                        },
+                        "url": "{{baseUrl}}/products/{{product_id}}"
+                    }
+                },
+                {
+                    "name": "Delete Product",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": "{{baseUrl}}/products/{{product_id}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Customers",
+            "item": [
+                {
+                    "name": "Create Customer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Cliente Postman\",\n  \"email\": \"cliente+{{$timestamp}}@mail.com\",\n  \"phone\": \"11999999999\"\n}"
+                        },
+                        "url": "{{baseUrl}}/customers"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Create Customer 201', function () { pm.expect(pm.response.code).to.eql(201); });",
+                                    "const json = pm.response.json();",
+                                    "if (json.id) pm.collectionVariables.set('customer_id', String(json.id));",
+                                    "if (json.email) pm.collectionVariables.set('customer_email', json.email);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "List Customers",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/customers"
+                    }
+                },
+                {
+                    "name": "Get Customer By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/customers/{{customer_id}}"
+                    }
+                },
+                {
+                    "name": "Update Customer",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Cliente Postman Updated\",\n  \"email\": \"{{customer_email}}\",\n  \"phone\": \"11988887777\"\n}"
+                        },
+                        "url": "{{baseUrl}}/customers/{{customer_id}}"
+                    }
+                },
+                {
+                    "name": "Delete Customer",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": "{{baseUrl}}/customers/{{customer_id}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Payment Methods",
+            "item": [
+                {
+                    "name": "Create Payment Method (ELECTRONIC)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Electronic Postman {{$timestamp}}\",\n  \"type\": \"ELECTRONIC\",\n  \"status\": true\n}"
+                        },
+                        "url": "{{baseUrl}}/payment-methods"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Create Payment Method 201', function () { pm.expect(pm.response.code).to.eql(201); });",
+                                    "const json = pm.response.json();",
+                                    "if (json.id) pm.collectionVariables.set('payment_method_id', String(json.id));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Create Payment Method (CASH)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Cash Postman {{$timestamp}}\",\n  \"type\": \"CASH\",\n  \"status\": true\n}"
+                        },
+                        "url": "{{baseUrl}}/payment-methods"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Create Payment Method 201', function () { pm.expect(pm.response.code).to.eql(201); });",
+                                    "const json = pm.response.json();",
+                                    "if (json.id) pm.collectionVariables.set('payment_method_cash_id', String(json.id));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "List Payment Methods",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/payment-methods"
+                    }
+                },
+                {
+                    "name": "Get Payment Method By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/payment-methods/{{payment_method_id}}"
+                    }
+                },
+                {
+                    "name": "Update Payment Method (full payload)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Electronic Postman Updated\",\n  \"type\": \"ELECTRONIC\",\n  \"status\": false\n}"
+                        },
+                        "url": "{{baseUrl}}/payment-methods/{{payment_method_id}}"
+                    }
+                },
+                {
+                    "name": "Delete Payment Method",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": "{{baseUrl}}/payment-methods/{{payment_method_id}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Sales (Lifecycle)",
+            "item": [
+                {
+                    "name": "Create Sale (OPEN)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"customer_id\": {{customer_id}},\n  \"items\": [\n    {\n      \"product_id\": {{product_id}},\n      \"quantity\": 1\n    }\n  ]\n}"
+                        },
+                        "url": "{{baseUrl}}/sales"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Create Sale OPEN 201', function () { pm.expect(pm.response.code).to.eql(201); });",
+                                    "const json = pm.response.json();",
+                                    "if (json.id) pm.collectionVariables.set('sale_id', String(json.id));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Add Payment (ELECTRONIC)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"payment_method_id\": {{payment_method_id}},\n  \"amount\": \"100.00\"\n}"
+                        },
+                        "url": "{{baseUrl}}/sales/{{sale_id}}/payments"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Payment added', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Add Payment (CASH) - with change",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"payment_method_id\": {{payment_method_cash_id}},\n  \"amount\": \"5000.00\"\n}"
+                        },
+                        "url": "{{baseUrl}}/sales/{{sale_id}}/payments"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Payment added', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Finalize Sale",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{baseUrl}}/sales/{{sale_id}}/finalize"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Finalize OK', function () { pm.expect(pm.response.code).to.eql(200); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Get Sale By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/sales/{{sale_id}}"
+                    }
+                },
+                {
+                    "name": "Get Sale PDF (only FINALIZED)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/sales/{{sale_id}}/pdf"
+                    }
+                },
+                {
+                    "name": "List Sales",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/sales"
+                    }
+                }
+            ]
+        }
+    ]
+}
