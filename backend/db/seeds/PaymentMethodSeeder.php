@@ -6,6 +6,11 @@ class PaymentMethodSeeder extends AbstractSeed
 {
     public function run(): void
     {
+        $existing = $this->fetchRow('SELECT COUNT(*) AS total FROM payment_methods');
+        if ((int) ($existing['total'] ?? 0) > 0) {
+            return;
+        }
+
         $methods = [
             [
                 'name' => 'Debit',

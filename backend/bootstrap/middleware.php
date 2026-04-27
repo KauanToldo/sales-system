@@ -7,12 +7,12 @@ return function (App $app) {
 
     $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'http://localhost:5173';
 
-    // 🔥 1. PRE-FLIGHT (tem que vir primeiro)
+    // 1. PRE-FLIGHT (tem que vir primeiro)
     $app->options('/{routes:.+}', function ($request, $response) {
         return $response;
     });
 
-    // 🔥 2. CORS HEADERS
+    // 2. CORS HEADERS
     $app->add(function (Request $request, $handler) use ($frontendUrl) {
         $response = $handler->handle($request);
 
@@ -22,7 +22,7 @@ return function (App $app) {
             ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     });
 
-    // 🔥 3. ERROR MIDDLEWARE
+    // 3. ERROR MIDDLEWARE
     $app->addErrorMiddleware(true, true, true);
     $app->addBodyParsingMiddleware();
 };
