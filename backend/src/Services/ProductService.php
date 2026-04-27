@@ -30,13 +30,17 @@ final class ProductService
 
     public function create(array $data): array
     {
-        $sku = trim((string) ($data['sku'] ?? ''));
+        $sku = strtoupper(trim((string) ($data['sku'] ?? '')));
         $name = trim((string) ($data['name'] ?? ''));
         $category = trim((string) ($data['category'] ?? ''));
         $price = $this->normalizeMoney((string) ($data['price'] ?? ''));
 
         if ($sku === '' || $name === '' || $category === '') {
             throw new \InvalidArgumentException('sku, name and category are required');
+        }
+
+        if ($this->productRepository->existsBySkuIgnoreCase($sku)) {
+            throw new \DomainException('SKU already exists');
         }
 
         $product = new Product(null, $sku, $name, $category, $price);
@@ -56,13 +60,17 @@ final class ProductService
 
     public function update(int $id, array $data): array
     {
-        $sku = trim((string) ($data['sku'] ?? ''));
+        $sku = strtoupper(trim((string) ($data['sku'] ?? '')));
         $name = trim((string) ($data['name'] ?? ''));
         $category = trim((string) ($data['category'] ?? ''));
         $price = $this->normalizeMoney((string) ($data['price'] ?? ''));
 
         if ($sku === '' || $name === '' || $category === '') {
             throw new \InvalidArgumentException('sku, name and category are required');
+        }
+
+        if ($this->productRepository->existsBySkuIgnoreCase($sku, $id)) {
+            throw new \DomainException('SKU already exists');
         }
 
         $product = new Product($id, $sku, $name, $category, $price);

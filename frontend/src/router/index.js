@@ -24,7 +24,7 @@ const routes = [
         meta: { requiresAuth: false },
     },
     {
-        path: '/home',
+        path: '/',
         component: AppShell,
         meta: { requiresAuth: true },
         children: [
@@ -57,7 +57,7 @@ const routes = [
                 meta: { requiresAuth: true, title: 'Payments' },
             },
             {
-                path: 'pos/sales/:id?',
+                path: 'sales/:id?',
                 name: 'point-of-sale',
                 component: PointOfSaleView,
                 meta: { requiresAuth: true, title: 'Point of Sale' },
@@ -75,7 +75,7 @@ const routes = [
         redirect: (to) => {
             const authStore = useAuthStore()
             if (authStore.isAuthenticated()) {
-                return '/home/dashboard'
+                return '/dashboard'
             }
             return '/login'
         },
@@ -88,19 +88,27 @@ const router = createRouter({
 })
 
 // Navigation Guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore()
-    const isAuthenticated = authStore.isAuthenticated()
     const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+    const hasToken = Boolean(authStore.token)
 
-    // Se requer autenticação e não está autenticado
-    if (requiresAuth && !isAuthenticated) {
+    if (requiresAuth && !hasToken) {
         next({ name: 'login' })
         return
     }
 
-    // Se está autenticado e tenta acessar login/register
-    if (isAuthenticated && (to.name === 'login' || to.name === 'register')) {
+    if (requiresAuth && hasToken) {
+        const validSession = await authStore.checkAuth()
+
+        if (!validSession) {
+            next({ name: 'login' })
+            return
+        }
+    }
+
+    // Se requer autenticação e não está autenticado
+    if (hasToken && (to.name === 'login' || to.name === 'register')) {
         next({ name: 'dashboard' })
         return
     }

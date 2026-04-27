@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Entities\PaymentMethod;
 use App\Enums\PaymentMethodType;
 use App\Repositories\PaymentMethodRepository;
+use PDOException;
 
 final class PaymentMethodService
 {
@@ -81,7 +82,15 @@ final class PaymentMethodService
             throw new \RuntimeException('Payment method not found');
         }
 
-        $this->paymentMethodRepository->delete($id);
+        try {
+            $this->paymentMethodRepository->delete($id);
+        } catch (PDOException $e) {
+            if (($e->errorInfo[0] ?? null) === '23503') {
+                throw new \DomainException('This payment method cannot be deleted because it is already used in one or more sales. You can deactivate it instead.');
+            }
+
+            throw $e;
+        }
     }
 
     private function serialize(PaymentMethod $method): array

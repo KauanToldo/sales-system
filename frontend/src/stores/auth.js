@@ -2,11 +2,25 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import http from '../api/http'
 
+let unauthorizedListenerRegistered = false
+
 export const useAuthStore = defineStore('auth', () => {
     const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
     const token = ref(localStorage.getItem('token') || null)
+    const sessionValidated = ref(false)
     const isLoading = ref(false)
     const error = ref(null)
+
+    const clearSessionState = () => {
+        token.value = null
+        user.value = null
+        sessionValidated.value = false
+    }
+
+    if (!unauthorizedListenerRegistered && typeof window !== 'undefined') {
+        window.addEventListener('sales-system:unauthorized', clearSessionState)
+        unauthorizedListenerRegistered = true
+    }
 
     const register = async (name, email, password, confirmPassword) => {
         isLoading.value = true
@@ -22,6 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
 
             token.value = data.token
             user.value = data.user
+            sessionValidated.value = true
 
             localStorage.setItem('token', data.token)
             localStorage.setItem('user', JSON.stringify(data.user))
@@ -47,6 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
 
             token.value = data.token
             user.value = data.user
+            sessionValidated.value = true
 
             localStorage.setItem('token', data.token)
             localStorage.setItem('user', JSON.stringify(data.user))
@@ -61,8 +77,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     const logout = () => {
-        token.value = null
-        user.value = null
+        clearSessionState()
         localStorage.removeItem('token')
         localStorage.removeItem('user')
     }
@@ -73,6 +88,7 @@ export const useAuthStore = defineStore('auth', () => {
         try {
             const { data } = await http.get('/auth/me')
             user.value = data.user
+            sessionValidated.value = true
             localStorage.setItem('user', JSON.stringify(data.user))
             return true
         } catch (err) {
@@ -86,6 +102,7 @@ export const useAuthStore = defineStore('auth', () => {
     return {
         user,
         token,
+        sessionValidated,
         isLoading,
         error,
         register,

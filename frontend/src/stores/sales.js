@@ -25,6 +25,14 @@ const parseMoney = (value) => {
     return cents === null ? 0 : cents / 100
 }
 
+const createUiKey = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID()
+    }
+
+    return `ui-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
 export const useSalesStore = defineStore('sales', () => {
     const currentSale = ref(null)
     const customerId = ref(null)
@@ -40,9 +48,14 @@ export const useSalesStore = defineStore('sales', () => {
     const loading = ref(false)
     const loadingList = ref(false)
     const errors = ref(null)
+    const itemFieldErrors = ref({})
+    const paymentFieldErrors = ref({})
 
     const isPersisted = computed(() => Boolean(currentSale.value?.id))
     const isFinalized = computed(() => currentSale.value?.status === 'FINALIZED')
+    const hasValidationErrors = computed(() => {
+        return Object.keys(itemFieldErrors.value).length > 0 || Object.keys(paymentFieldErrors.value).length > 0
+    })
 
     const paymentMethodMap = computed(() => {
         const map = new Map()
@@ -92,6 +105,42 @@ export const useSalesStore = defineStore('sales', () => {
         return error?.response?.data?.error || fallback
     }
 
+    const setItemError = (productId, message) => {
+        itemFieldErrors.value = {
+            ...itemFieldErrors.value,
+            [String(productId)]: message,
+        }
+    }
+
+    const clearItemError = (productId) => {
+        const key = String(productId)
+        if (!Object.prototype.hasOwnProperty.call(itemFieldErrors.value, key)) {
+            return
+        }
+
+        const next = { ...itemFieldErrors.value }
+        delete next[key]
+        itemFieldErrors.value = next
+    }
+
+    const setPaymentError = (index, message) => {
+        paymentFieldErrors.value = {
+            ...paymentFieldErrors.value,
+            [String(index)]: message,
+        }
+    }
+
+    const clearPaymentError = (index) => {
+        const key = String(index)
+        if (!Object.prototype.hasOwnProperty.call(paymentFieldErrors.value, key)) {
+            return
+        }
+
+        const next = { ...paymentFieldErrors.value }
+        delete next[key]
+        paymentFieldErrors.value = next
+    }
+
     const normalizeSalePayload = (sale) => {
         currentSale.value = sale
         customerId.value = sale.customer_id ?? null
@@ -102,6 +151,7 @@ export const useSalesStore = defineStore('sales', () => {
                 product_id: Number(item.product_id),
                 quantity: Number(item.quantity),
                 unit_price: Number(item.unit_price),
+                uiKey: item.uiKey ?? `item-${item.product_id}`,
             }))
             : []
 
@@ -111,6 +161,7 @@ export const useSalesStore = defineStore('sales', () => {
                 sale_id: payment.sale_id ?? null,
                 payment_method_id: Number(payment.payment_method_id),
                 amount: Number(payment.amount),
+                uiKey: payment.uiKey ?? createUiKey(),
             }))
             : []
     }
@@ -121,6 +172,8 @@ export const useSalesStore = defineStore('sales', () => {
         items.value = []
         payments.value = []
         errors.value = null
+        itemFieldErrors.value = {}
+        paymentFieldErrors.value = {}
     }
 
     const ensureEditable = () => {
@@ -144,6 +197,10 @@ export const useSalesStore = defineStore('sales', () => {
 
         if (totals.value.overpayWithoutCash) {
             throw new Error('Overpayment is allowed only when at least one CASH payment method is used')
+        }
+
+        if (hasValidationErrors.value) {
+            throw new Error('Fix the highlighted fields before saving the sale')
         }
 
         const payload = {
@@ -238,6 +295,7 @@ export const useSalesStore = defineStore('sales', () => {
 
         if (existing) {
             existing.quantity += quantity
+            clearItemError(productId)
             return
         }
 
@@ -248,6 +306,8 @@ export const useSalesStore = defineStore('sales', () => {
             quantity,
             unit_price: Number(product.price),
         })
+
+        clearItemError(productId)
     }
 
     const updateItemQty = (productId, qty) => {
@@ -257,14 +317,27 @@ export const useSalesStore = defineStore('sales', () => {
         const item = items.value.find((entry) => Number(entry.product_id) === Number(productId))
         if (!item) return
 
-        const quantity = Number(qty)
+        const normalized = String(qty ?? '').trim()
+
+        if (normalized === '') {
+            setItemError(productId, 'Quantity is required')
+            return
+        }
+
+        if (!/^\d+$/.test(normalized)) {
+            setItemError(productId, 'Quantity must be an integer value')
+            return
+        }
+
+        const quantity = Number(normalized)
 
         if (quantity <= 0) {
-            items.value = items.value.filter((entry) => Number(entry.product_id) !== Number(productId))
+            setItemError(productId, 'Quantity must be greater than zero')
             return
         }
 
         item.quantity = quantity
+        clearItemError(productId)
     }
 
     const removeItem = (productId) => {
@@ -272,6 +345,7 @@ export const useSalesStore = defineStore('sales', () => {
         ensureNotPersistedForDraftChanges()
 
         items.value = items.value.filter((entry) => Number(entry.product_id) !== Number(productId))
+        clearItemError(productId)
     }
 
     const addPayment = async (payment) => {
@@ -291,6 +365,7 @@ export const useSalesStore = defineStore('sales', () => {
                 sale_id: null,
                 payment_method_id: methodId,
                 amount: parseMoney(amountValue),
+                uiKey: createUiKey(),
             })
 
             if (totals.value.overpayWithoutCash) {
@@ -301,13 +376,25 @@ export const useSalesStore = defineStore('sales', () => {
             return null
         }
 
-        const { data } = await http.post(`/sales/${currentSale.value.id}/payments`, {
-            payment_method_id: methodId,
-            amount: centsToMoney(amountCents),
-        })
+        const method = paymentMethodMap.value.get(methodId)
+        const isCash = String(method?.type || '').toUpperCase() === 'CASH'
+        const projectedTotalPaid = totals.value.totalPaid + amountCents / 100
 
-        normalizeSalePayload(data)
-        return data
+        if (projectedTotalPaid > totals.value.total && !isCash && !totals.value.hasCashPayment) {
+            throw new Error('Overpayment is allowed only when at least one CASH payment method is used')
+        }
+
+        try {
+            const { data } = await http.post(`/sales/${currentSale.value.id}/payments`, {
+                payment_method_id: methodId,
+                amount: centsToMoney(amountCents),
+            })
+
+            normalizeSalePayload(data)
+            return data
+        } catch (error) {
+            throw new Error(getApiErrorMessage(error, 'Unable to add payment'))
+        }
     }
 
     const updatePayment = (index, payment) => {
@@ -319,10 +406,27 @@ export const useSalesStore = defineStore('sales', () => {
         }
 
         const methodId = Number(payment.payment_method_id)
-        const amountCents = toCents(payment.amount)
+        const rawAmount = String(payment.amount ?? '').trim()
+        const amountCents = toCents(rawAmount)
 
-        if (!methodId || amountCents === null || amountCents <= 0) {
-            throw new Error('Provide a valid payment method and amount')
+        if (!methodId) {
+            setPaymentError(index, 'Select a payment method')
+            return
+        }
+
+        if (rawAmount === '') {
+            setPaymentError(index, 'Amount is required')
+            return
+        }
+
+        if (amountCents === null) {
+            setPaymentError(index, 'Enter a valid amount (e.g. 10.00)')
+            return
+        }
+
+        if (amountCents <= 0) {
+            setPaymentError(index, 'Amount must be greater than zero')
+            return
         }
 
         payments.value[index] = {
@@ -331,8 +435,11 @@ export const useSalesStore = defineStore('sales', () => {
             amount: amountCents / 100,
         }
 
+        clearPaymentError(index)
+
         if (totals.value.overpayWithoutCash) {
-            throw new Error('Overpayment is allowed only when at least one CASH payment method is used')
+            setPaymentError(index, 'Overpayment is allowed only when at least one CASH payment method is used')
+            return
         }
     }
 
@@ -345,13 +452,25 @@ export const useSalesStore = defineStore('sales', () => {
         }
 
         payments.value.splice(index, 1)
+
+        const nextErrors = {}
+        for (const [key, value] of Object.entries(paymentFieldErrors.value)) {
+            const currentIndex = Number(key)
+
+            if (currentIndex < index) {
+                nextErrors[String(currentIndex)] = value
+            } else if (currentIndex > index) {
+                nextErrors[String(currentIndex - 1)] = value
+            }
+        }
+        paymentFieldErrors.value = nextErrors
     }
 
     const finalizeSale = async () => {
         ensureEditable()
 
-        if (!isPersisted.value) {
-            throw new Error('Save the sale as OPEN before finalizing')
+        if (hasValidationErrors.value) {
+            throw new Error('Fix the highlighted fields before finalizing the sale')
         }
 
         if (!totals.value.isPaidInFull) {
@@ -365,6 +484,10 @@ export const useSalesStore = defineStore('sales', () => {
         loading.value = true
 
         try {
+            if (!isPersisted.value) {
+                await createOpenSale()
+            }
+
             const { data } = await http.post(`/sales/${currentSale.value.id}/finalize`)
             normalizeSalePayload(data)
             return data
@@ -382,8 +505,18 @@ export const useSalesStore = defineStore('sales', () => {
 
         const blob = new Blob([response.data], { type: 'application/pdf' })
         const url = URL.createObjectURL(blob)
-        window.open(url, '_blank', 'noopener,noreferrer')
-        setTimeout(() => URL.revokeObjectURL(url), 5000)
+        const link = document.createElement('a')
+        const fallbackName = `sale-${saleId}.pdf`
+        const disposition = String(response.headers?.['content-disposition'] || '')
+        const matched = disposition.match(/filename="?([^";]+)"?/i)
+
+        link.href = url
+        link.download = matched?.[1] || fallbackName
+        link.target = '_self'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        setTimeout(() => URL.revokeObjectURL(url), 2000)
     }
 
     return {
@@ -398,6 +531,9 @@ export const useSalesStore = defineStore('sales', () => {
         loading,
         loadingList,
         errors,
+        itemFieldErrors,
+        paymentFieldErrors,
+        hasValidationErrors,
         isPersisted,
         isFinalized,
         hasCashMethod,

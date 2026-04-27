@@ -45,6 +45,19 @@ final class ProductRepository
         );
     }
 
+    public function existsBySkuIgnoreCase(string $sku, ?int $excludeId = null): bool
+    {
+        if ($excludeId !== null) {
+            $stmt = $this->pdo->prepare("SELECT 1 FROM products WHERE LOWER(sku) = LOWER(?) AND id <> ? LIMIT 1");
+            $stmt->execute([$sku, $excludeId]);
+        } else {
+            $stmt = $this->pdo->prepare("SELECT 1 FROM products WHERE LOWER(sku) = LOWER(?) LIMIT 1");
+            $stmt->execute([$sku]);
+        }
+
+        return (bool) $stmt->fetchColumn();
+    }
+
     public function create(Product $product): Product
     {
         $stmt = $this->pdo->prepare("

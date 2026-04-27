@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 const props = defineProps({
   payments: {
@@ -22,6 +22,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  paymentErrors: {
+    type: Object,
+    default: () => ({}),
+  },
 })
 
 const emit = defineEmits(['add-payment', 'update-payment', 'remove-payment'])
@@ -39,6 +43,39 @@ const methodById = computed(() => {
 
   return map
 })
+
+const draftAmounts = reactive({})
+
+watch(
+  () => props.payments,
+  (nextPayments) => {
+    const nextKeys = new Set(nextPayments.map((payment, index) => String(payment.uiKey ?? payment.id ?? index)))
+
+    nextPayments.forEach((payment, index) => {
+      const key = String(payment.uiKey ?? payment.id ?? index)
+
+      if (!Object.prototype.hasOwnProperty.call(draftAmounts, key)) {
+        draftAmounts[key] = Number(payment.amount).toFixed(2)
+      }
+    })
+
+    for (const key of Object.keys(draftAmounts)) {
+      if (!nextKeys.has(key)) {
+        delete draftAmounts[key]
+      }
+    }
+  },
+  { immediate: true, deep: true }
+)
+
+const getPaymentError = (index) => props.paymentErrors?.[String(index)] || ''
+
+const handleAmountInput = (index, payment, event) => {
+  const rawValue = event.target.value
+  const key = String(payment.uiKey ?? payment.id ?? index)
+  draftAmounts[key] = rawValue
+  emit('update-payment', index, { payment_method_id: payment.payment_method_id, amount: rawValue })
+}
 
 const handleAdd = () => {
   emit('add-payment', {
@@ -104,19 +141,22 @@ const handleAdd = () => {
             <td colspan="4" class="px-3 py-6 text-center text-sales-ink">No payments added yet</td>
           </tr>
 
-          <tr v-for="(payment, index) in payments" :key="payment.id ?? `draft-${index}`">
+              <tr v-for="(payment, index) in payments" :key="payment.uiKey ?? payment.id ?? `draft-${index}`">
             <td class="px-3 py-2 font-semibold text-sales-tertiary">
               {{ methodById.get(Number(payment.payment_method_id))?.name || `Method #${payment.payment_method_id}` }}
             </td>
             <td class="px-3 py-2 text-sales-ink">{{ methodById.get(Number(payment.payment_method_id))?.type || '-' }}</td>
             <td class="px-3 py-2">
               <input
-                :value="Number(payment.amount).toFixed(2)"
+                :value="draftAmounts[String(payment.uiKey ?? payment.id ?? index)] ?? Number(payment.amount).toFixed(2)"
                 type="text"
                 class="h-9 w-28 rounded-md border border-sales-border px-2 text-sm outline-none focus:border-sales-primary focus:ring-2 focus:ring-sales-primary/15"
                 :disabled="!editableDraft || disabled"
-                @input="emit('update-payment', index, { payment_method_id: payment.payment_method_id, amount: $event.target.value })"
+                @input="handleAmountInput(index, payment, $event)"
               />
+              <p v-if="getPaymentError(index)" class="mt-1 text-xs font-medium text-red-600">
+                {{ getPaymentError(index) }}
+              </p>
             </td>
             <td class="px-3 py-2 text-right">
               <button
