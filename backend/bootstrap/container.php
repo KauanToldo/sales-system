@@ -119,6 +119,7 @@ $container->set(SaleService::class, function ($c) {
         $c->get(PaymentRepository::class),
         $c->get(ProductRepository::class),
         $c->get(PaymentMethodRepository::class),
+        $c->get(UserRepository::class),
         $c->get(SaleCalculator::class)
     );
 });

@@ -72,6 +72,8 @@ final class SaleController
             return $this->errorResponse($response, $e->getMessage(), 'validation_error', 422);
         } catch (\DomainException $e) {
             return $this->errorResponse($response, $e->getMessage(), 'business_rule_error', 422);
+        } catch (\RuntimeException $e) {
+            return $this->errorResponse($response, $e->getMessage(), 'auth_user_error', 401);
         } catch (\Throwable $e) {
             return $this->errorResponse($response, 'Unable to create sale', 'sale_create_error', 500);
         }

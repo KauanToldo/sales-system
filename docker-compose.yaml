@@ -10,7 +10,13 @@ services:
       APP_DB_USER: ${POSTGRES_USER}
       APP_DB_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - ./backend:/app:delegated
+      - ./backend/public:/app/public
+      - ./backend/src:/app/src
+      - ./backend/bootstrap:/app/bootstrap
+      - ./backend/db:/app/db
+      - ./backend/phinx.php:/app/phinx.php
+      - ./backend/composer.json:/app/composer.json
+      - ./backend/composer.lock:/app/composer.lock
     command: >
       sh -c "
         echo 'Waiting for database...' &&
