@@ -14,7 +14,7 @@ const props = defineProps({
     type: Object,
     default: () => ({
       name: '',
-      type: 'electronic',
+      type: 'ELECTRONIC',
       status: true,
     }),
   },
@@ -28,7 +28,7 @@ const emit = defineEmits(['close', 'submit'])
 
 const form = reactive({
   name: '',
-  type: 'electronic',
+  type: 'ELECTRONIC',
   status: true,
 })
 
@@ -45,7 +45,7 @@ watch(
     }
 
     form.name = props.initialData.name || ''
-    form.type = props.initialData.type || 'electronic'
+    form.type = props.initialData.type || 'ELECTRONIC'
     form.status = typeof props.initialData.status === 'boolean' ? props.initialData.status : true
 
     clearErrors()
@@ -81,7 +81,7 @@ const validateForm = () => {
     valid = false
   }
 
-  if (!['electronic', 'physical'].includes(form.type)) {
+  if (!['ELECTRONIC', 'CASH'].includes(form.type)) {
     fieldErrors.type = 'Select a valid type'
     valid = false
   }
@@ -136,8 +136,8 @@ const handleSubmit = () => {
                   :class="fieldErrors.type ? 'border-red-500 focus:border-red-500 focus:ring-red-500/15' : ''"
                   @change="clearFieldError('type')"
                 >
-                  <option value="electronic">electronic</option>
-                  <option value="physical">physical</option>
+                  <option value="ELECTRONIC">ELECTRONIC</option>
+                  <option value="CASH">CASH</option>
                 </select>
                 <p v-if="fieldErrors.type" class="mt-1 text-xs font-medium text-red-600">{{ fieldErrors.type }}</p>
               </div>

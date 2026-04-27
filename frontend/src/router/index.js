@@ -57,7 +57,7 @@ const routes = [
                 meta: { requiresAuth: true, title: 'Payments' },
             },
             {
-                path: 'point-of-sale',
+                path: 'pos/sales/:id?',
                 name: 'point-of-sale',
                 component: PointOfSaleView,
                 meta: { requiresAuth: true, title: 'Point of Sale' },
