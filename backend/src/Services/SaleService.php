@@ -12,6 +12,7 @@ use App\Repositories\SaleItemRepository;
 use App\Repositories\PaymentRepository;
 use App\Repositories\ProductRepository;
 use App\Repositories\PaymentMethodRepository;
+use App\Repositories\UserRepository;
 use PDO;
 
 final class SaleService
@@ -23,6 +24,7 @@ final class SaleService
         private PaymentRepository $paymentRepository,
         private ProductRepository $productRepository,
         private PaymentMethodRepository $paymentMethodRepository,
+        private UserRepository $userRepository,
         private SaleCalculator $saleCalculator
     ) {}
 
@@ -52,6 +54,15 @@ final class SaleService
      */
     public function createOpen(array $data, int $userId): array
     {
+        if ($userId <= 0) {
+            throw new \RuntimeException('invalid authenticated user');
+        }
+
+        $user = $this->userRepository->findById($userId);
+        if (!$user) {
+            throw new \RuntimeException('authenticated user not found');
+        }
+
         $customerId = isset($data['customer_id']) && $data['customer_id'] !== '' ? (int) $data['customer_id'] : null;
         $items = $data['items'] ?? null;
         $payments = $data['payments'] ?? [];

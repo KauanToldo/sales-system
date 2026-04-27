@@ -124,7 +124,7 @@ const openCreateModal = () => {
   isEditing.value = false
   selectedMethod.value = {
     name: '',
-    type: 'electronic',
+    type: 'ELECTRONIC',
     status: true,
   }
   isFormModalOpen.value = true
