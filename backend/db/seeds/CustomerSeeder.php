@@ -6,6 +6,11 @@ class CustomerSeeder extends AbstractSeed
 {
     public function run(): void
     {
+        $existing = $this->fetchRow('SELECT COUNT(*) AS total FROM customers');
+        if ((int) ($existing['total'] ?? 0) > 0) {
+            return;
+        }
+
         $firstNames = [
             'Lucas',
             'Mariana',

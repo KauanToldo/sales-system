@@ -9,12 +9,16 @@ services:
       APP_DB_NAME: ${POSTGRES_DB}
       APP_DB_USER: ${POSTGRES_USER}
       APP_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
     volumes:
       - ./backend/public:/app/public
       - ./backend/src:/app/src
       - ./backend/bootstrap:/app/bootstrap
       - ./backend/db:/app/db
+      - ./backend/tests:/app/tests
       - ./backend/phinx.php:/app/phinx.php
+      - ./backend/phpunit.xml:/app/phpunit.xml
       - ./backend/composer.json:/app/composer.json
       - ./backend/composer.lock:/app/composer.lock
     command: >

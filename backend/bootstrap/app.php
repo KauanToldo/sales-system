@@ -6,7 +6,7 @@ use Slim\Factory\AppFactory;
 
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-$dotenv->load();
+$dotenv->safeLoad();
 
 $container = require __DIR__ . '/container.php';
 

@@ -37,6 +37,10 @@
         {
             "key": "customer_email",
             "value": ""
+        },
+        {
+            "key": "payment_method_cash_id",
+            "value": ""
         }
     ],
     "auth": {
@@ -299,7 +303,7 @@
             "name": "Payment Methods",
             "item": [
                 {
-                    "name": "Create Payment Method",
+                    "name": "Create Payment Method (ELECTRONIC)",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -323,6 +327,36 @@
                                     "pm.test('Create Payment Method 201', function () { pm.expect(pm.response.code).to.eql(201); });",
                                     "const json = pm.response.json();",
                                     "if (json.id) pm.collectionVariables.set('payment_method_id', String(json.id));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Create Payment Method (CASH)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Cash Postman {{$timestamp}}\",\n  \"type\": \"CASH\",\n  \"status\": true\n}"
+                        },
+                        "url": "{{baseUrl}}/payment-methods"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Create Payment Method 201', function () { pm.expect(pm.response.code).to.eql(201); });",
+                                    "const json = pm.response.json();",
+                                    "if (json.id) pm.collectionVariables.set('payment_method_cash_id', String(json.id));"
                                 ]
                             }
                         }
@@ -405,7 +439,7 @@
                     ]
                 },
                 {
-                    "name": "Add Payment (partial or full)",
+                    "name": "Add Payment (ELECTRONIC)",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -433,7 +467,7 @@
                     ]
                 },
                 {
-                    "name": "Add Payment (second - optional)",
+                    "name": "Add Payment (CASH) - with change",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -444,10 +478,21 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"payment_method_id\": {{payment_method_id}},\n  \"amount\": \"1000.00\"\n}"
+                            "raw": "{\n  \"payment_method_id\": {{payment_method_cash_id}},\n  \"amount\": \"5000.00\"\n}"
                         },
                         "url": "{{baseUrl}}/sales/{{sale_id}}/payments"
-                    }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Payment added', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });"
+                                ]
+                            }
+                        }
+                    ]
                 },
                 {
                     "name": "Finalize Sale",

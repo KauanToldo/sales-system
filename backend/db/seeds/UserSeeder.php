@@ -6,6 +6,11 @@ class UserSeeder extends AbstractSeed
 {
     public function run(): void
     {
+        $existing = $this->fetchRow('SELECT COUNT(*) AS total FROM users');
+        if ((int) ($existing['total'] ?? 0) > 0) {
+            return;
+        }
+
         $data = [
             [
                 'name' => 'Admin',

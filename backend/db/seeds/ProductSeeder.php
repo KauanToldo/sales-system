@@ -6,6 +6,11 @@ class ProductSeeder extends AbstractSeed
 {
     public function run(): void
     {
+        $existing = $this->fetchRow('SELECT COUNT(*) AS total FROM products');
+        if ((int) ($existing['total'] ?? 0) > 0) {
+            return;
+        }
+
         $categories = [
             'Hardware',
             'Software',

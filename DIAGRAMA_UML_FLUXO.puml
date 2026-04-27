@@ -1,0 +1,74 @@
+@startuml
+' Diagrama de atividade UML do fluxo principal do sistema de vendas
+
+title Fluxo do Sistema de Vendas
+start
+
+:Usuario acessa o sistema;
+
+if (Possui conta?) then (Nao)
+  :Cadastrar usuario;
+  if (Cadastro valido?) then (Nao)
+    :Exibir erros de validacao;
+    stop
+  else (Sim)
+    :Prosseguir para login;
+  endif
+else (Sim)
+endif
+
+:Informar credenciais de login;
+if (Credenciais validas?) then (Nao)
+  :Retornar erro de autenticacao (401);
+  stop
+else (Sim)
+  :Gerar JWT;
+  :Acessar dashboard;
+endif
+
+if (Acao escolhida) then (Cadastros)
+  :Gerenciar Produtos (CRUD);
+  :Gerenciar Clientes (CRUD);
+  :Gerenciar Formas de Pagamento (CRUD);
+  :Voltar ao dashboard;
+else (Nova venda)
+  :1. Iniciar Venda (Selecionar cliente e Adicionar produtos);
+  if (Dados validos e Produtos existem?) then (Nao)
+    :Retornar erro (422/404);
+    stop
+  else (Sim)
+    :Salvar Venda em status OPEN com os Itens (Snapshot de preco);
+  endif
+
+  repeat
+    :2. Adicionar Pagamento (Selecionar Forma de Pagamento e Valor);
+    if (Forma existe e Venda OPEN?) then (Nao)
+      :Retornar erro (422/404);
+      stop
+    else (Sim)
+      :Salvar Pagamento associado a Venda;
+    endif
+  repeat while (Deseja adicionar mais pagamentos?) is (Sim)
+
+  :3. Finalizar Venda;
+  :Calcular total da venda e total pago;
+  if (Total pago < total da venda?) then (Sim)
+    :Retornar erro (Valor insuficiente) (422);
+    stop
+  else (Nao)
+    if (Metodo dinheiro e total pago > total da venda?) then (Sim)
+      :Calcular troco e atualizar;
+    else (Nao)
+      :Troco = 0;
+    endif
+    :Gravar transacao atomica (Atualiza Status para FINALIZED e Troco);
+  endif
+
+  :4. Gerar Recibo PDF;
+  :Disponibilizar download do PDF;
+endif
+
+:Registrar operacao e retornar sucesso;
+stop
+
+@enduml

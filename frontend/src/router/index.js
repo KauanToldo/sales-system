@@ -3,7 +3,6 @@ import { useAuthStore } from '../stores/auth'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import AppShell from '../components/layout/AppShell.vue'
-import DashboardView from '../views/DashboardView.vue'
 import ProductsView from '../views/ProductsView.vue'
 import CustomersView from '../views/CustomersView.vue'
 import PaymentsView from '../views/PaymentsView.vue'
@@ -30,13 +29,7 @@ const routes = [
         children: [
             {
                 path: '',
-                redirect: { name: 'dashboard' },
-            },
-            {
-                path: 'dashboard',
-                name: 'dashboard',
-                component: DashboardView,
-                meta: { requiresAuth: true, title: 'Dashboard' },
+                redirect: { name: 'point-of-sale' },
             },
             {
                 path: 'products',
@@ -75,7 +68,7 @@ const routes = [
         redirect: (to) => {
             const authStore = useAuthStore()
             if (authStore.isAuthenticated()) {
-                return '/dashboard'
+                return '/sales'
             }
             return '/login'
         },
@@ -109,7 +102,7 @@ router.beforeEach(async (to, from, next) => {
 
     // Se requer autenticação e não está autenticado
     if (hasToken && (to.name === 'login' || to.name === 'register')) {
-        next({ name: 'dashboard' })
+        next({ name: 'point-of-sale' })
         return
     }
 

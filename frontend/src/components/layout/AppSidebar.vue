@@ -2,7 +2,6 @@
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import {
-  PhChartPieSlice,
   PhCube,
   PhUsers,
   PhCreditCard,
@@ -27,7 +26,6 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const items = [
-  { name: 'dashboard', label: 'Dashboard', icon: PhChartPieSlice },
   { name: 'products', label: 'Products', icon: PhCube },
   { name: 'customers', label: 'Customers', icon: PhUsers },
   { name: 'payments', label: 'Payments', icon: PhCreditCard },
