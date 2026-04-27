@@ -23,7 +23,7 @@ const status = computed(() => salesStore.currentSale?.status || 'OPEN')
 const isDraftEditable = computed(() => !salesStore.isPersisted && !salesStore.isFinalized)
 const canAddServerPayment = computed(() => salesStore.isPersisted && !salesStore.isFinalized)
 const canFinalize = computed(() => {
-  return salesStore.isPersisted && !salesStore.isFinalized && salesStore.totals.isPaidInFull && !salesStore.totals.overpayWithoutCash
+  return !salesStore.isFinalized && salesStore.totals.isPaidInFull && !salesStore.totals.overpayWithoutCash && !salesStore.hasValidationErrors
 })
 
 const loadSaleFromRoute = async () => {
@@ -194,6 +194,7 @@ watch(
           :items="salesStore.items"
           :products-by-id="productsById"
           :editable="isDraftEditable"
+          :item-errors="salesStore.itemFieldErrors"
           @update-qty="handleUpdateItemQty"
           @remove="handleRemoveItem"
         />
@@ -204,6 +205,7 @@ watch(
           :editable-draft="isDraftEditable"
           :can-add-server-payment="canAddServerPayment"
           :disabled="salesStore.isFinalized"
+          :payment-errors="salesStore.paymentFieldErrors"
           @add-payment="handleAddPayment"
           @update-payment="handleUpdatePayment"
           @remove-payment="handleRemovePayment"
@@ -213,7 +215,7 @@ watch(
           v-if="salesStore.isPersisted && !salesStore.isFinalized"
           class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
         >
-          This OPEN sale is persisted. To keep backend consistency, item and existing-payment edits are locked and only new payments can be added.
+          This sale has already been saved. You can still add new payments, but items and existing payments are read-only.
         </div>
 
         <div

@@ -133,7 +133,7 @@ final class SaleController
 
             return $response
                 ->withHeader('Content-Type', 'application/pdf')
-                ->withHeader('Content-Disposition', 'inline; filename="sale-' . $id . '.pdf"')
+                ->withHeader('Content-Disposition', 'attachment; filename="sale-' . $id . '.pdf"')
                 ->withStatus(200);
         } catch (\RuntimeException $e) {
             return $this->errorResponse($response, $e->getMessage(), 'not_found', 404);

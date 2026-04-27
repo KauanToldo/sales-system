@@ -95,6 +95,8 @@ final class PaymentMethodController
             $this->paymentMethodService->delete($id);
 
             return $response->withStatus(204);
+        } catch (\DomainException $e) {
+            return $this->errorResponse($response, $e->getMessage(), 'payment_method_in_use', 409);
         } catch (\RuntimeException $e) {
             return $this->errorResponse($response, $e->getMessage(), 'not_found', 404);
         } catch (\Throwable $e) {

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { PhPencilSimpleLine, PhTrash } from '@phosphor-icons/vue'
 import { toast } from 'vue3-toastify'
 import http from '../api/http'
@@ -100,8 +100,20 @@ const totalPages = computed(() => {
   return Math.max(1, Math.ceil(filteredProducts.value.length / perPage))
 })
 
+const displayPage = computed(() => Math.min(currentPage.value, totalPages.value))
+
+watch(search, () => {
+  currentPage.value = 1
+})
+
+watch(totalPages, (pages) => {
+  if (currentPage.value > pages) {
+    currentPage.value = pages
+  }
+})
+
 const paginatedProducts = computed(() => {
-  const start = (currentPage.value - 1) * perPage
+  const start = (displayPage.value - 1) * perPage
   return filteredProducts.value.slice(start, start + perPage)
 })
 
@@ -112,15 +124,15 @@ const paginationLabel = computed(() => {
     return 'Showing 0 to 0 of 0 entries'
   }
 
-  const start = (currentPage.value - 1) * perPage + 1
-  const end = Math.min(currentPage.value * perPage, total)
+  const start = (displayPage.value - 1) * perPage + 1
+  const end = Math.min(displayPage.value * perPage, total)
 
   return `Showing ${start} to ${end} of ${total} entries`
 })
 
 const visiblePages = computed(() => {
   const pages = []
-  const start = Math.max(1, currentPage.value - 1)
+  const start = Math.max(1, displayPage.value - 1)
   const end = Math.min(totalPages.value, start + 2)
 
   for (let page = start; page <= end; page += 1) {
@@ -250,13 +262,13 @@ onMounted(() => {
         loading-message="Loading products..."
         empty-message="No products found."
         :pagination-label="paginationLabel"
-        :current-page="currentPage"
+        :current-page="displayPage"
         :total-pages="totalPages"
         :visible-pages="visiblePages"
         show-actions
         actions-label="Actions"
-        @prev="setPage(currentPage - 1)"
-        @next="setPage(currentPage + 1)"
+        @prev="setPage(displayPage - 1)"
+        @next="setPage(displayPage + 1)"
         @page="setPage"
       >
         <template #cell-price="{ row }">

@@ -9,9 +9,12 @@ use Psr\Http\Message\ResponseInterface;
 use Slim\Psr7\Response;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use App\Repositories\UserRepository;
 
 class JwtAuthMiddleware implements MiddlewareInterface
 {
+    public function __construct(private UserRepository $userRepository) {}
+
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $authHeader = $request->getHeaderLine('Authorization');
@@ -26,6 +29,16 @@ class JwtAuthMiddleware implements MiddlewareInterface
             $secret = $_ENV['JWT_SECRET'];
 
             $decoded = JWT::decode($token, new Key($secret, 'HS256'));
+
+            $userId = isset($decoded->sub) ? (int) $decoded->sub : 0;
+            if ($userId <= 0) {
+                return $this->unauthorized();
+            }
+
+            $user = $this->userRepository->findById($userId);
+            if (!$user) {
+                return $this->unauthorized();
+            }
 
             // injeta user no request
             $request = $request->withAttribute('user', $decoded);

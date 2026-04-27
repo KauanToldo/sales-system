@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { PhList } from '@phosphor-icons/vue'
 import { useAuthStore } from '../../stores/auth'
@@ -17,19 +17,31 @@ const closeSidebar = () => {
   isSidebarOpen.value = false
 }
 
+const validateSession = async () => {
+  if (!authStore.token) {
+    return
+  }
+
+  await authStore.checkAuth()
+
+  if (!authStore.isAuthenticated()) {
+    router.push({ name: 'login' })
+  }
+}
+
 const handleLogout = () => {
   authStore.logout()
   router.push({ name: 'login' })
 }
 
 onMounted(async () => {
-  if (!authStore.isAuthenticated()) {
-    await authStore.checkAuth()
+  await validateSession()
 
-    if (!authStore.isAuthenticated()) {
-      router.push({ name: 'login' })
-    }
-  }
+  window.addEventListener('focus', validateSession)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('focus', validateSession)
 })
 </script>
 

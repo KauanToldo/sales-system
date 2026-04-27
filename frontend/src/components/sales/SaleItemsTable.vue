@@ -1,4 +1,6 @@
 <script setup>
+import { reactive, watch } from 'vue'
+
 const props = defineProps({
   items: {
     type: Array,
@@ -12,11 +14,47 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  itemErrors: {
+    type: Object,
+    default: () => ({}),
+  },
 })
 
 const emit = defineEmits(['update-qty', 'remove'])
 
+const draftQuantities = reactive({})
+
+watch(
+  () => props.items,
+  (items) => {
+    const nextKeys = new Set(items.map((item) => String(item.product_id)))
+
+    for (const item of items) {
+      const key = String(item.product_id)
+
+      if (!Object.prototype.hasOwnProperty.call(draftQuantities, key)) {
+        draftQuantities[key] = String(item.quantity ?? '')
+      }
+    }
+
+    for (const key of Object.keys(draftQuantities)) {
+      if (!nextKeys.has(key)) {
+        delete draftQuantities[key]
+      }
+    }
+  },
+  { immediate: true, deep: true }
+)
+
 const lineTotal = (item) => Number(item.quantity || 0) * Number(item.unit_price || 0)
+
+const getItemError = (productId) => props.itemErrors?.[String(productId)] || ''
+
+const handleQtyInput = (item, event) => {
+  const rawValue = event.target.value
+  draftQuantities[String(item.product_id)] = rawValue
+  emit('update-qty', { productId: item.product_id, qty: rawValue })
+}
 </script>
 
 <template>
@@ -46,13 +84,17 @@ const lineTotal = (item) => Number(item.quantity || 0) * Number(item.unit_price 
             <td class="px-3 py-2 text-sales-ink">{{ Number(item.unit_price).toFixed(2) }}</td>
             <td class="px-3 py-2">
               <input
-                :value="item.quantity"
-                type="number"
+                :value="draftQuantities[String(item.product_id)] ?? String(item.quantity ?? '')"
+                type="text"
+                inputmode="numeric"
                 min="1"
                 class="h-9 w-20 rounded-md border border-sales-border px-2 text-sm outline-none focus:border-sales-primary focus:ring-2 focus:ring-sales-primary/15"
                 :disabled="!editable"
-                @input="emit('update-qty', { productId: item.product_id, qty: Number($event.target.value) })"
+                @input="handleQtyInput(item, $event)"
               />
+              <p v-if="getItemError(item.product_id)" class="mt-1 text-xs font-medium text-red-600">
+                {{ getItemError(item.product_id) }}
+              </p>
             </td>
             <td class="px-3 py-2 text-right font-semibold text-sales-tertiary">{{ lineTotal(item).toFixed(2) }}</td>
             <td class="px-3 py-2 text-right">

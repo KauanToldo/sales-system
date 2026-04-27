@@ -142,15 +142,28 @@ const handleSubmit = () => {
                 <p v-if="fieldErrors.type" class="mt-1 text-xs font-medium text-red-600">{{ fieldErrors.type }}</p>
               </div>
 
-              <div class="flex items-end pb-1">
-                <label class="inline-flex items-center gap-2 text-sm text-sales-tertiary">
-                  <input
-                    v-model="form.status"
-                    type="checkbox"
-                    class="h-4 w-4 rounded border-sales-border text-sales-primary focus:ring-sales-primary/20"
-                  />
-                  Active status
-                </label>
+              <div>
+                <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-sales-ink">Status</label>
+                <button
+                  type="button"
+                  class="inline-flex w-full items-center justify-between rounded-md border border-sales-border bg-white px-3 py-2 text-sm text-sales-tertiary transition hover:bg-sales-muted"
+                  :class="form.status ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-300 bg-slate-50'"
+                  @click="form.status = !form.status"
+                >
+                  <span class="font-medium">{{ form.status ? 'Active' : 'Inactive' }}</span>
+
+                  <span
+                    class="relative inline-flex h-6 w-11 items-center rounded-full transition"
+                    :class="form.status ? 'bg-emerald-500' : 'bg-slate-300'"
+                    aria-hidden="true"
+                  >
+                    <span
+                      class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition"
+                      :class="form.status ? 'translate-x-5' : 'translate-x-1'"
+                    />
+                  </span>
+                </button>
+                <p class="mt-1 text-xs text-sales-ink">Inactive methods stay in history but cannot be used in new sales.</p>
               </div>
             </div>
 
